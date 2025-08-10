@@ -605,10 +605,16 @@ export default function MiscPage() {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ themeSkin: skin.key }),
-                    }).catch(() => {});
+                    }).catch((err) => {
+                      // Intentionally ignore network errors during best-effort user settings update
+                      console.warn('Failed to persist theme skin to /api/user-settings:', err);
+                    });
                     const evt = new StorageEvent('storage', { key: 'kurotv_theme_skin', newValue: skin.key } as any);
                     window.dispatchEvent(evt);
-                  } catch {}
+                  } catch (err) {
+                    // Swallow unexpected runtime errors but leave a breadcrumb in console for debugging
+                    console.warn('Failed to apply theme skin:', err);
+                  }
                 }}
                 className="group relative h-20 rounded-xl border overflow-hidden hover:shadow-md transition"
                 title={skin.label}
