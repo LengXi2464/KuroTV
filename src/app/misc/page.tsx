@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 
 import PageLayout from '@/components/PageLayout';
@@ -15,6 +15,8 @@ import {
   saveFavorite,
   savePlayRecord,
 } from '@/lib/db.client';
+
+export const dynamic = 'force-dynamic';
 
 export default function MiscPage() {
   const router = useRouter();
@@ -392,6 +394,7 @@ export default function MiscPage() {
   }
 
   return (
+    <Suspense fallback={null}>
     <PageLayout activePath="/misc">
       <div className="px-4 sm:px-10 py-8 space-y-8">
         <h1 className="text-2xl font-bold">玩趣</h1>
@@ -633,5 +636,6 @@ export default function MiscPage() {
 
       </div>
     </PageLayout>
+    </Suspense>
   );
 } 
