@@ -497,19 +497,65 @@ function PlayPageClient() {
         }
         const data = await response.json();
 
-        // 处理搜索结果，根据规则过滤
-        const results = data.results.filter(
-          (result: SearchResult) =>
-            result.title.replaceAll(' ', '').toLowerCase() ===
-              videoTitleRef.current.replaceAll(' ', '').toLowerCase() &&
-            (videoYearRef.current
-              ? result.year.toLowerCase() === videoYearRef.current.toLowerCase()
-              : true) &&
-            (searchType
-              ? (searchType === 'tv' && result.episodes.length > 1) ||
-                (searchType === 'movie' && result.episodes.length === 1)
-              : true)
+        // 标题规范化：去掉空格/标点/季数等干扰项
+        const normalize = (s: string) =>
+          (s || '')
+            .replace(/第[一二三四五六七八九十0-9]+季/gi, '')
+            .replace(/第[一二三四五六七八九十0-9]+部/gi, '')
+            .replace(/Season\s*\d+/gi, '')
+            .replace(/S\d+/gi, '')
+            .replace(/[·・.:：!！?？、，,。()（）《》<>“”"'’\s]/g, '')
+            .toLowerCase();
+
+        const qNorm = normalize(videoTitleRef.current || query);
+        const wantTv = searchType === 'tv' || (!searchType && undefined);
+        const wantMovie = searchType === 'movie' || (!searchType && undefined);
+
+        // 先尝试严格匹配（与原逻辑一致但用规范化）
+        let results: SearchResult[] = (data.results as SearchResult[]).filter(
+          (r) => {
+            const rNorm = normalize(r.title);
+            const titleOk = rNorm === qNorm;
+            const yearOk = videoYearRef.current
+              ? (r.year || '').toLowerCase() ===
+                videoYearRef.current.toLowerCase()
+              : true;
+            const typeOk = searchType
+              ? (searchType === 'tv' && r.episodes.length > 1) ||
+                (searchType === 'movie' && r.episodes.length === 1)
+              : true;
+            return titleOk && yearOk && typeOk;
+          }
         );
+
+        // 若无结果，则使用宽松打分策略
+        if (results.length === 0) {
+          const scored = (data.results as SearchResult[]).map((r) => {
+            const rNorm = normalize(r.title);
+            let score = 0;
+            if (rNorm === qNorm) score += 4;
+            if (rNorm.includes(qNorm) || qNorm.includes(rNorm)) score += 3;
+            if (videoYearRef.current && (r.year || '') === videoYearRef.current)
+              score += 1;
+            if (searchType) {
+              if (searchType === 'tv' && r.episodes.length > 1) score += 1;
+              if (searchType === 'movie' && r.episodes.length === 1) score += 1;
+            } else {
+              // 若未指定类型，给多集源一点权重
+              if (r.episodes.length > 1) score += 1;
+            }
+            return { r, score };
+          });
+
+          scored.sort((a, b) => b.score - a.score);
+          results = scored.filter((x) => x.score > 0).map((x) => x.r);
+        }
+
+        // 仍为空则直接返回原始结果（兜底），避免前端报“未找到匹配结果”
+        if (results.length === 0) {
+          results = data.results as SearchResult[];
+        }
+
         setAvailableSources(results);
         return results;
       } catch (err) {

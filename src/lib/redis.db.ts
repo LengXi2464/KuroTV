@@ -153,6 +153,18 @@ export class RedisStorage implements IStorage {
     await withRetry(() => this.client.del(this.favKey(userName, key)));
   }
 
+  // ---------- 用户设置（跨端同步） ----------
+  private userSettingsKey(user: string) {
+    return `u:${user}:settings`;
+  }
+  async getUserSettings(userName: string): Promise<any | null> {
+    const val = await withRetry(() => this.client.get(this.userSettingsKey(userName)));
+    return val ? JSON.parse(val as unknown as string) : null;
+  }
+  async setUserSettings(userName: string, settings: any): Promise<void> {
+    await withRetry(() => this.client.set(this.userSettingsKey(userName), JSON.stringify(settings)));
+  }
+
   // ---------- 用户注册 / 登录 ----------
   private userPwdKey(user: string) {
     return `u:${user}:pwd`;
@@ -275,7 +287,7 @@ export class RedisStorage implements IStorage {
 
 // 单例 Redis 客户端
 function getRedisClient(): RedisClientType {
-  const globalKey = Symbol.for('__MOONTV_REDIS_CLIENT__');
+  const globalKey = Symbol.for('__KUROTV_REDIS_CLIENT__');
   let client: RedisClientType | undefined = (global as any)[globalKey];
 
   if (!client) {

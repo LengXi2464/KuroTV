@@ -271,6 +271,40 @@ export class D1Storage implements IStorage {
     }
   }
 
+  // 用户设置（跨端同步）
+  async getUserSettings(userName: string): Promise<any | null> {
+    try {
+      const db = await this.getDatabase();
+      const row = await db
+        .prepare('SELECT settings FROM user_settings WHERE username = ?')
+        .bind(userName)
+        .first<{ settings: string }>();
+      if (!row) return null;
+      try {
+        return JSON.parse(row.settings || '{}');
+      } catch {
+        return null;
+      }
+    } catch (err) {
+      // 表不存在等情况，前端会回退本地
+      console.warn('getUserSettings failed (ignore if table missing):', err);
+      return null;
+    }
+  }
+  async setUserSettings(userName: string, settings: any): Promise<void> {
+    try {
+      const db = await this.getDatabase();
+      await db
+        .prepare(
+          'INSERT OR REPLACE INTO user_settings (username, settings) VALUES (?, ?)' 
+        )
+        .bind(userName, JSON.stringify(settings || {}))
+        .run();
+    } catch (err) {
+      console.warn('setUserSettings failed (ignore if table missing):', err);
+    }
+  }
+
   // 用户相关
   async registerUser(userName: string, password: string): Promise<void> {
     try {

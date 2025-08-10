@@ -25,6 +25,11 @@ export interface Favorite {
   search_title: string; // 搜索时使用的标题
 }
 
+// 用户设置
+export interface UserSettings {
+  themeSkin?: string;
+}
+
 // 存储接口
 export interface IStorage {
   // 播放记录相关
@@ -42,6 +47,10 @@ export interface IStorage {
   setFavorite(userName: string, key: string, favorite: Favorite): Promise<void>;
   getAllFavorites(userName: string): Promise<{ [key: string]: Favorite }>;
   deleteFavorite(userName: string, key: string): Promise<void>;
+
+  // 用户设置（跨端同步）
+  getUserSettings(userName: string): Promise<UserSettings | null>;
+  setUserSettings(userName: string, settings: UserSettings): Promise<void>;
 
   // 用户相关
   registerUser(userName: string, password: string): Promise<void>;
