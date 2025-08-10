@@ -120,7 +120,7 @@ export default function MiscPage() {
   async function getSearchCount(keyword: string): Promise<number> {
     try {
       const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), 8000);
+      const t = setTimeout(() => ctrl.abort(), 4000);
       const res = await fetch(`/api/search?q=${encodeURIComponent(keyword)}`, {
         signal: ctrl.signal,
       });
@@ -137,6 +137,7 @@ export default function MiscPage() {
     if (spinning) return;
     setSpinning(true);
     try {
+      const deadline = Date.now() + 7000; // 全局最多 7s
       const pool = (tvTitles.length > 0 ? tvTitles : fallbackTVs).slice();
       // 打乱顺序
       for (let i = pool.length - 1; i > 0; i--) {
@@ -146,6 +147,7 @@ export default function MiscPage() {
 
       const maxTry = Math.min(pool.length, 12);
       for (let i = 0; i < maxTry; i++) {
+        if (Date.now() > deadline) break;
         const cand = pool[i];
         if (!cand) continue;
         // 先用原名试
@@ -157,6 +159,7 @@ export default function MiscPage() {
         // 再用清洗后的关键词试
         const cleaned = cleanTitle(cand);
         if (cleaned && cleaned !== cand) {
+          if (Date.now() > deadline) break;
           cnt = await getSearchCount(cleaned);
           if (cnt > 0) {
             router.push(`/search?q=${encodeURIComponent(cleaned)}`);
