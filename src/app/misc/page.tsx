@@ -15,7 +15,7 @@ import {
   saveFavorite,
   savePlayRecord,
 } from '@/lib/db.client';
-import Link from 'next/link';
+// import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,7 +63,7 @@ export default function MiscPage() {
         const unique = Array.from(new Set(titles));
         if (unique.length > 0) setTvTitles(unique);
       } catch (e) {
-        // 忽略错误，使用本地兜底
+        void e;
       } finally {
         setLoadingTV(false);
       }
@@ -292,11 +292,11 @@ export default function MiscPage() {
     if (format === 'txt') {
       const lines: string[] = [];
       lines.push('# 收藏');
-      Object.entries(fav).forEach(([key, v]: any) => {
+      Object.entries(fav).forEach(([key, v]: [string, any]) => {
         lines.push(`${key}\t${v.title}\t${v.year || ''}\t${v.total_episodes || ''}`);
       });
       lines.push('\n# 播放记录');
-      Object.entries(pr).forEach(([key, v]: any) => {
+      Object.entries(pr).forEach(([key, v]: [string, any]) => {
         lines.push(
           `${key}\t${v.title}\t第${v.index}集\t${v.play_time}/${v.total_time}\t${v.year || ''}`
         );
@@ -310,7 +310,7 @@ export default function MiscPage() {
     if (format === 'csv') {
       const rows: string[] = [];
       rows.push('type,source,id,title,year,episodes,index,play_time,total_time,save_time');
-      Object.entries(fav).forEach(([key, v]: any) => {
+      Object.entries(fav).forEach(([key, v]: [string, any]) => {
         const plus = key.indexOf('+');
         const src = key.slice(0, plus);
         const id = key.slice(plus + 1);
@@ -330,7 +330,7 @@ export default function MiscPage() {
           .join(',');
         rows.push(row);
       });
-      Object.entries(pr).forEach(([key, v]: any) => {
+      Object.entries(pr).forEach(([key, v]: [string, any]) => {
         const plus = key.indexOf('+');
         const src = key.slice(0, plus);
         const id = key.slice(plus + 1);
@@ -357,7 +357,7 @@ export default function MiscPage() {
     if (format === 'doc') {
       const esc = (s: string) => (s || '').replace(/[&<>]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]!));
       const favRows = Object.entries(fav)
-        .map(([key, v]: any) => {
+        .map(([key, v]: [string, any]) => {
           const plus = key.indexOf('+');
           const src = key.slice(0, plus);
           const id = key.slice(plus + 1);
@@ -365,7 +365,7 @@ export default function MiscPage() {
         })
         .join('');
       const recRows = Object.entries(pr)
-        .map(([key, v]: any) => {
+        .map(([key, v]: [string, any]) => {
           const plus = key.indexOf('+');
           const src = key.slice(0, plus);
           const id = key.slice(plus + 1);
@@ -391,7 +391,8 @@ export default function MiscPage() {
     }
   }
 
-  function csv(v: any): string {
+  function csv(v: unknown): string {
+    if (v === null || v === undefined) return '';
     const s = String(v ?? '');
     if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
     return s;
@@ -473,7 +474,7 @@ export default function MiscPage() {
                   if (!file) return;
                   try {
                     const text = await file.text();
-                    const data = JSON.parse(text) as any;
+                    const data = JSON.parse(text) as { favorites?: Record<string, any>; playRecords?: Record<string, any> };
                     if (data?.favorites) {
                       const entries = Object.entries(data.favorites) as [string, any][];
                       for (const [key, fav] of entries) {

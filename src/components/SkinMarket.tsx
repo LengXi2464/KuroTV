@@ -39,7 +39,7 @@ function broadcastSkinChange(value: string | null) {
     localStorage.setItem('kurotv_theme_skin', value ?? 'reset');
     // 主窗口内也触发监听
     window.dispatchEvent(new StorageEvent('storage', { key: 'kurotv_theme_skin', newValue: value ?? 'reset' }));
-  } catch {}
+  } catch (err) { void err; }
 }
 
 async function saveUserSettings(partial: Record<string, unknown>) {
@@ -49,7 +49,7 @@ async function saveUserSettings(partial: Record<string, unknown>) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(partial),
     });
-  } catch {}
+  } catch (err) { void err; }
 }
 
 export default function SkinMarket() {
@@ -111,7 +111,7 @@ export default function SkinMarket() {
     // 先持久化
     broadcastSkinChange(key);
     // 触发一次强制重绘，避免个别浏览器不立即应用背景
-    try { document.body.style.transform = 'translateZ(0)'; setTimeout(()=>{ document.body.style.transform=''; }, 0); } catch {}
+    try { document.body.style.transform = 'translateZ(0)'; setTimeout(()=>{ document.body.style.transform=''; }, 0); } catch (err) { void err; }
     // 同步到用户设置（非必需，本地模式会被服务端忽略）
     saveUserSettings({ themeSkin: key });
   };
@@ -119,7 +119,7 @@ export default function SkinMarket() {
   const handleReset = async () => {
     setCurrent('reset');
     broadcastSkinChange(null);
-    try { document.body.style.transform = 'translateZ(0)'; setTimeout(()=>{ document.body.style.transform=''; }, 0); } catch {}
+    try { document.body.style.transform = 'translateZ(0)'; setTimeout(()=>{ document.body.style.transform=''; }, 0); } catch (err) { void err; }
     saveUserSettings({ themeSkin: 'reset' });
   };
 
@@ -168,7 +168,7 @@ export default function SkinMarket() {
       await navigator.clipboard.writeText(exportedCustom);
       setJustSaved(true);
       setTimeout(() => setJustSaved(false), 1500);
-    } catch {}
+    } catch (err) { void err; }
   };
 
   const panel = (
@@ -202,26 +202,26 @@ export default function SkinMarket() {
               <div className="text-sm font-medium">二次元特效</div>
               <div className="flex items-center gap-6 text-sm">
                 <label className="inline-flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={kawaiiSakura} onChange={(e)=>{ setKawaiiSakura(e.target.checked); try{ const v=String(e.target.checked); localStorage.setItem('kurotv_theme_kawaii_sakura', v); localStorage.setItem('kurotv_kawaii_sakura', v); window.dispatchEvent(new StorageEvent('storage',{key:'kurotv_theme_kawaii_sakura', newValue:v} as any)); }catch{} }} /> 樱花飘落
+                  <input type="checkbox" checked={kawaiiSakura} onChange={(e)=>{ setKawaiiSakura(e.target.checked); try{ const v=String(e.target.checked); localStorage.setItem('kurotv_theme_kawaii_sakura', v); localStorage.setItem('kurotv_kawaii_sakura', v); window.dispatchEvent(new StorageEvent('storage',{key:'kurotv_theme_kawaii_sakura', newValue:v} as any)); }catch(err){ void err; } }} /> 樱花飘落
                 </label>
                 <label className="inline-flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={kawaiiHearts} onChange={(e)=>{ setKawaiiHearts(e.target.checked); try{ const v=String(e.target.checked); localStorage.setItem('kurotv_theme_kawaii_hearts', v); localStorage.setItem('kurotv_kawaii_hearts', v); window.dispatchEvent(new StorageEvent('storage',{key:'kurotv_theme_kawaii_hearts', newValue:v} as any)); }catch{} }} /> 爱心飘浮
+                  <input type="checkbox" checked={kawaiiHearts} onChange={(e)=>{ setKawaiiHearts(e.target.checked); try{ const v=String(e.target.checked); localStorage.setItem('kurotv_theme_kawaii_hearts', v); localStorage.setItem('kurotv_kawaii_hearts', v); window.dispatchEvent(new StorageEvent('storage',{key:'kurotv_theme_kawaii_hearts', newValue:v} as any)); }catch(err){ void err; } }} /> 爱心飘浮
                 </label>
               </div>
               <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400">
                 <span>数量</span>
-                <input type="range" min={8} max={120} step={1} value={kawaiiCount} onChange={(e)=>{ const v = Math.max(8, Math.min(120, Number(e.target.value))); setKawaiiCount(v); try{ localStorage.setItem('kurotv_theme_kawaii_count', String(v)); window.dispatchEvent(new StorageEvent('storage',{key:'kurotv_theme_kawaii_count', newValue:String(v)} as any)); } catch{} }} className="flex-1" />
+                <input type="range" min={8} max={120} step={1} value={kawaiiCount} onChange={(e)=>{ const v = Math.max(8, Math.min(120, Number(e.target.value))); setKawaiiCount(v); try{ localStorage.setItem('kurotv_theme_kawaii_count', String(v)); window.dispatchEvent(new StorageEvent('storage',{key:'kurotv_theme_kawaii_count', newValue:String(v)} as any)); } catch(err){ void err; } }} className="flex-1" />
                 <span>{kawaiiCount}</span>
               </div>
               <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400">
                 <span>速度</span>
-                <input type="range" min={0.5} max={2} step={0.05} value={kawaiiSpeed} onChange={(e)=>{ const v = Math.max(0.5, Math.min(2, Number(e.target.value))); setKawaiiSpeed(v); try{ localStorage.setItem('kurotv_theme_kawaii_speed', String(v)); window.dispatchEvent(new StorageEvent('storage',{key:'kurotv_theme_kawaii_speed', newValue:String(v)} as any)); } catch{} }} className="flex-1" />
+                <input type="range" min={0.5} max={2} step={0.05} value={kawaiiSpeed} onChange={(e)=>{ const v = Math.max(0.5, Math.min(2, Number(e.target.value))); setKawaiiSpeed(v); try{ localStorage.setItem('kurotv_theme_kawaii_speed', String(v)); window.dispatchEvent(new StorageEvent('storage',{key:'kurotv_theme_kawaii_speed', newValue:String(v)} as any)); } catch(err){ void err; } }} className="flex-1" />
                 <span>{kawaiiSpeed.toFixed(2)}x</span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-gray-600 dark:text-gray-400">
                 <label className="flex items-center gap-2">
                   <span className="whitespace-nowrap">爱心样式</span>
-                  <select value={heartStyle} onChange={(e)=>{ const v = e.target.value as any; setHeartStyle(v); try{ localStorage.setItem('kurotv_theme_kawaii_style_heart', v); window.dispatchEvent(new StorageEvent('storage',{key:'kurotv_theme_kawaii_style_heart', newValue:v} as any)); } catch{} }} className="flex-1 px-2 py-1 rounded border bg-white dark:bg-gray-900">
+                  <select value={heartStyle} onChange={(e)=>{ const v = e.target.value as any; setHeartStyle(v); try{ localStorage.setItem('kurotv_theme_kawaii_style_heart', v); window.dispatchEvent(new StorageEvent('storage',{key:'kurotv_theme_kawaii_style_heart', newValue:v} as any)); } catch(err){ void err; } }} className="flex-1 px-2 py-1 rounded border bg-white dark:bg-gray-900">
                     <option value="glow">发光</option>
                     <option value="gradient">渐变</option>
                     <option value="outline">描边</option>
@@ -229,7 +229,7 @@ export default function SkinMarket() {
                 </label>
                 <label className="flex items-center gap-2">
                   <span className="whitespace-nowrap">樱花样式</span>
-                  <select value={sakuraStyle} onChange={(e)=>{ const v = e.target.value as any; setSakuraStyle(v); try{ localStorage.setItem('kurotv_theme_kawaii_style_sakura', v); window.dispatchEvent(new StorageEvent('storage',{key:'kurotv_theme_kawaii_style_sakura', newValue:v} as any)); } catch{} }} className="flex-1 px-2 py-1 rounded border bg-white dark:bg-gray-900">
+                  <select value={sakuraStyle} onChange={(e)=>{ const v = e.target.value as any; setSakuraStyle(v); try{ localStorage.setItem('kurotv_theme_kawaii_style_sakura', v); window.dispatchEvent(new StorageEvent('storage',{key:'kurotv_theme_kawaii_style_sakura', newValue:v} as any)); } catch(err){ void err; } }} className="flex-1 px-2 py-1 rounded border bg-white dark:bg-gray-900">
                     <option value="glow">发光</option>
                     <option value="gradient">渐变</option>
                     <option value="outline">描边</option>

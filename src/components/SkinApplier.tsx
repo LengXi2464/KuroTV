@@ -158,7 +158,7 @@ function applyCustomSkin(d: HTMLElement) {
   }
 }
 
-function applyBackgroundOverlay(d: HTMLElement) {
+function applyBackgroundOverlay(_d: HTMLElement) {
   try {
     // 移除已有背景图层，并忽略存储的背景图设置
     const layer = document.getElementById('kurotv-bg-image');

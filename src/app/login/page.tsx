@@ -157,6 +157,7 @@ function LoginPageClient() {
   };
 
   // 自动登录（仅尝试一次）
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (triedAutoLoginRef.current) return;
     triedAutoLoginRef.current = true;
@@ -389,12 +390,12 @@ if (typeof window !== 'undefined') {
     const cx = window.innerWidth / 2;
     const cy = window.innerHeight / 2;
     updateParallax(e.clientX - cx, e.clientY - cy);
-  });
+  }, { passive: true });
   if ('DeviceOrientationEvent' in window) {
     window.addEventListener('deviceorientation', (e: any) => {
       const x = (e.gamma || 0) * 3;
       const y = (e.beta || 0) * 3;
       updateParallax(x, y);
-    });
+    }, { passive: true });
   }
 }
