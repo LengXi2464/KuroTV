@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect } from 'react';
-import { processImageUrl } from '@/lib/utils';
 
 function ensureSkinStyles() {
   if (document.getElementById('kurotv-skin-styles')) return;
@@ -154,7 +153,9 @@ function applyCustomSkin(d: HTMLElement) {
       (d.style as any).background = backgroundCss;
       d.classList.add('skin-custom');
     }
-  } catch {}
+  } catch (err) {
+    void err;
+  }
 }
 
 function applyBackgroundOverlay(d: HTMLElement) {
@@ -162,7 +163,9 @@ function applyBackgroundOverlay(d: HTMLElement) {
     // 移除已有背景图层，并忽略存储的背景图设置
     const layer = document.getElementById('kurotv-bg-image');
     if (layer) layer.remove();
-  } catch {}
+  } catch (err) {
+    void err;
+  }
 }
 
 function ensureKawaiiOverlay(mode: 'none' | 'hearts' | 'sakura' | 'both') {
@@ -250,7 +253,9 @@ function applyKawaiiChibi() {
     el.style.setProperty('--chibi-opacity', String(opacity));
     el.style.backgroundImage = `url(${url})`;
     if (!existed) document.body.appendChild(el);
-  } catch {}
+  } catch (err) {
+    void err;
+  }
 }
 
 function applySkin(name: string | null) {
@@ -262,7 +267,7 @@ function applySkin(name: string | null) {
   (d.style as any).backgroundImage = '';
   (d.style as any).backgroundSize = '';
   // 默认移除特效层
-  try { ensureKawaiiOverlay('none'); } catch {}
+  try { ensureKawaiiOverlay('none'); } catch (err) { void err; }
 
   if (!name || name === 'reset') {
     d.style.background = '';
@@ -313,7 +318,9 @@ function applySkin(name: string | null) {
           : (fx as any);
       ensureKawaiiOverlay(finalFx);
       applyKawaiiChibi();
-    } catch {}
+    } catch (err) {
+      void err;
+    }
     applyBackgroundOverlay(d);
     return;
   }

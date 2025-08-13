@@ -47,8 +47,7 @@ function LoginPageClient() {
 
   // CapsLock 提示
   const handlePasswordKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // @ts-ignore
-    const caps = e.getModifierState && e.getModifierState('CapsLock');
+    const caps = typeof e.getModifierState === 'function' ? e.getModifierState('CapsLock') : false;
     setCapsLockOn(Boolean(caps));
   };
 
@@ -57,7 +56,9 @@ function LoginPageClient() {
     if (!el) return;
     try {
       el.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    } catch {}
+    } catch (err) {
+      void err;
+    }
   };
 
   async function performLogin(u?: string, p?: string) {
@@ -84,13 +85,17 @@ function LoginPageClient() {
             if (shouldAskUsername) {
               localStorage.setItem('kurotv_saved_username', u ?? username);
             }
-          } catch {}
+          } catch (err) {
+            void err;
+          }
         } else {
           try {
             localStorage.removeItem('kurotv_remember_me');
             localStorage.removeItem('kurotv_saved_password');
             localStorage.removeItem('kurotv_saved_username');
-          } catch {}
+          } catch (err) {
+            void err;
+          }
         }
 
         const redirect = searchParams.get('redirect') || '/';
@@ -163,7 +168,9 @@ function LoginPageClient() {
       if (savedPwd && (!shouldAskUsername || savedUsr)) {
         performLogin(savedUsr, savedPwd);
       }
-    } catch {}
+    } catch (err) {
+      void err;
+    }
   }, [shouldAskUsername]);
 
   const baseInputClass =
@@ -288,7 +295,9 @@ function LoginPageClient() {
                       localStorage.removeItem('kurotv_saved_password');
                       localStorage.removeItem('kurotv_saved_username');
                     }
-                  } catch {}
+                  } catch (err) {
+                    void err;
+                  }
                 }}
               />
               记住我（自动填充/自动登录）
