@@ -15,6 +15,7 @@ import {
   saveFavorite,
   savePlayRecord,
 } from '@/lib/db.client';
+import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
@@ -120,7 +121,7 @@ export default function MiscPage() {
   async function getSearchCount(keyword: string): Promise<number> {
     try {
       const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), 8000);
+      const t = setTimeout(() => ctrl.abort(), 4000);
       const res = await fetch(`/api/search?q=${encodeURIComponent(keyword)}`, {
         signal: ctrl.signal,
       });
@@ -137,6 +138,7 @@ export default function MiscPage() {
     if (spinning) return;
     setSpinning(true);
     try {
+      const deadline = Date.now() + 7000; // 全局最多 7s
       const pool = (tvTitles.length > 0 ? tvTitles : fallbackTVs).slice();
       // 打乱顺序
       for (let i = pool.length - 1; i > 0; i--) {
@@ -146,6 +148,7 @@ export default function MiscPage() {
 
       const maxTry = Math.min(pool.length, 12);
       for (let i = 0; i < maxTry; i++) {
+        if (Date.now() > deadline) break;
         const cand = pool[i];
         if (!cand) continue;
         // 先用原名试
@@ -157,6 +160,7 @@ export default function MiscPage() {
         // 再用清洗后的关键词试
         const cleaned = cleanTitle(cand);
         if (cleaned && cleaned !== cand) {
+          if (Date.now() > deadline) break;
           cnt = await getSearchCount(cleaned);
           if (cnt > 0) {
             router.push(`/search?q=${encodeURIComponent(cleaned)}`);
@@ -510,6 +514,8 @@ export default function MiscPage() {
           </div>
         </section>
 
+        {/* 留言板已移除 */}
+
         {/* 源站体检 */}
         <section className="rounded-2xl border border-white/40 dark:border-white/10 bg-white/70 dark:bg-zinc-900/40 backdrop-blur p-5 shadow-lg">
           <h2 className="text-lg font-semibold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-indigo-500">源站体检</h2>
@@ -587,52 +593,7 @@ export default function MiscPage() {
           </div>
         </section>
 
-        {/* 主题皮肤（多预设 + 跨端同步） */}
-        <section className="rounded-2xl border border-white/40 dark:border-white/10 bg-white/70 dark:bg-zinc-900/40 backdrop-blur p-5 shadow-lg">
-          <h2 className="text-lg font-semibold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-cyan-500 to-teal-500">主题皮肤</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-            {[
-              { key: 'flow', label: '流光', style: 'radial-gradient(1200px 600px at 50% -200px, rgba(99,102,241,.25), transparent), radial-gradient(800px 400px at 10% 10%, rgba(16,185,129,.2), transparent), radial-gradient(800px 400px at 90% 10%, rgba(59,130,246,.2), transparent)' },
-              { key: 'deepspace', label: '深空', style: 'linear-gradient(180deg, #0b1220, #0f172a)' },
-              { key: 'grid', label: '网格', style: 'linear-gradient(90deg,rgba(99,102,241,.08) 1px,transparent 0),linear-gradient(180deg,rgba(99,102,241,.08) 1px,transparent 0)' },
-              { key: 'kawaii', label: '可爱', style: 'linear-gradient(135deg,#ffe0f0 0%,#e0f7ff 100%)' },
-              { key: 'neon', label: '霓虹', style: 'radial-gradient(circle at 20% 10%, #ff00cc22, transparent 40%), radial-gradient(circle at 80% 20%, #00ccff22, transparent 40%), radial-gradient(circle at 50% 80%, #00ff8855, transparent 40%), #0b0f1a' },
-              { key: 'reset', label: '还原', style: '' },
-            ].map((skin) => (
-              <button
-                key={skin.key}
-                onClick={async () => {
-                  try {
-                    localStorage.setItem('kurotv_theme_skin', skin.key);
-                    fetch('/api/user-settings', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ themeSkin: skin.key }),
-                    }).catch((err) => {
-                      // Intentionally ignore network errors during best-effort user settings update
-                      console.warn('Failed to persist theme skin to /api/user-settings:', err);
-                    });
-                    const evt = new StorageEvent('storage', { key: 'kurotv_theme_skin', newValue: skin.key } as any);
-                    window.dispatchEvent(evt);
-                  } catch (err) {
-                    // Swallow unexpected runtime errors but leave a breadcrumb in console for debugging
-                    console.warn('Failed to apply theme skin:', err);
-                  }
-                }}
-                className="group relative h-20 rounded-xl border overflow-hidden hover:shadow-md transition"
-                title={skin.label}
-              >
-                <div className="absolute inset-0" style={{ background: skin.style }} />
-                {skin.key === 'grid' && (
-                  <div className="absolute inset-0" style={{ backgroundSize: '20px 20px' }} />
-                )}
-                <div className="absolute bottom-1 left-1 right-1 text-xs font-medium px-2 py-1 rounded bg-black/40 text-white backdrop-blur-sm opacity-90 group-hover:opacity-100">
-                  {skin.label}
-                </div>
-              </button>
-            ))}
-          </div>
-        </section>
+        {/* 主题皮肤预设入口已移除（请使用右上角调色板按钮进入皮肤市场） */}
 
       </div>
     </PageLayout>

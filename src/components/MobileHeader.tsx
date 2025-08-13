@@ -7,6 +7,7 @@ import { LogoutButton } from './LogoutButton';
 import { SettingsButton } from './SettingsButton';
 import { useSite } from './SiteProvider';
 import { ThemeToggle } from './ThemeToggle';
+import SkinMarket from './SkinMarket';
 
 interface MobileHeaderProps {
   showBackButton?: boolean;
@@ -25,6 +26,7 @@ const MobileHeader = ({ showBackButton = false }: MobileHeaderProps) => {
 
         {/* 右侧按钮 */}
         <div className='flex items-center gap-2'>
+          <SkinMarket />
           <LogoutButton />
           <ThemeToggle />
         </div>

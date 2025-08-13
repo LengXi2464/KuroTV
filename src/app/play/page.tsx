@@ -62,6 +62,8 @@ function PlayPageClient() {
     blockAdEnabledRef.current = blockAdEnabled;
   }, [blockAdEnabled]);
 
+  // 字幕功能已移除
+
   // 视频基本信息
   const [videoTitle, setVideoTitle] = useState(searchParams.get('title') || '');
   const [videoYear, setVideoYear] = useState(searchParams.get('year') || '');
@@ -166,209 +168,7 @@ function PlayPageClient() {
   const artPlayerRef = useRef<any>(null);
   const artRef = useRef<HTMLDivElement | null>(null);
 
-  // -----------------------------------------------------------------------------
-  // 工具函数（Utils）
-  // -----------------------------------------------------------------------------
-
-  // 播放源优选函数
-  const preferBestSource = async (
-    sources: SearchResult[]
-  ): Promise<SearchResult> => {
-    if (sources.length === 1) return sources[0];
-
-    // 将播放源均分为两批，并发测速各批，避免一次性过多请求
-    const batchSize = Math.ceil(sources.length / 2);
-    const allResults: Array<{
-      source: SearchResult;
-      testResult: { quality: string; loadSpeed: string; pingTime: number };
-    } | null> = [];
-
-    for (let start = 0; start < sources.length; start += batchSize) {
-      const batchSources = sources.slice(start, start + batchSize);
-      const batchResults = await Promise.all(
-        batchSources.map(async (source) => {
-          try {
-            // 检查是否有第一集的播放地址
-            if (!source.episodes || source.episodes.length === 0) {
-              console.warn(`播放源 ${source.source_name} 没有可用的播放地址`);
-              return null;
-            }
-
-            const episodeUrl =
-              source.episodes.length > 1
-                ? source.episodes[1]
-                : source.episodes[0];
-            const testResult = await getVideoResolutionFromM3u8(episodeUrl);
-
-            return {
-              source,
-              testResult,
-            };
-          } catch (error) {
-            return null;
-          }
-        })
-      );
-      allResults.push(...batchResults);
-    }
-
-    // 等待所有测速完成，包含成功和失败的结果
-    // 保存所有测速结果到 precomputedVideoInfo，供 EpisodeSelector 使用（包含错误结果）
-    const newVideoInfoMap = new Map<
-      string,
-      {
-        quality: string;
-        loadSpeed: string;
-        pingTime: number;
-        hasError?: boolean;
-      }
-    >();
-    allResults.forEach((result, index) => {
-      const source = sources[index];
-      const sourceKey = `${source.source}-${source.id}`;
-
-      if (result) {
-        // 成功的结果
-        newVideoInfoMap.set(sourceKey, result.testResult);
-      }
-    });
-
-    // 过滤出成功的结果用于优选计算
-    const successfulResults = allResults.filter(Boolean) as Array<{
-      source: SearchResult;
-      testResult: { quality: string; loadSpeed: string; pingTime: number };
-    }>;
-
-    setPrecomputedVideoInfo(newVideoInfoMap);
-
-    if (successfulResults.length === 0) {
-      console.warn('所有播放源测速都失败，使用第一个播放源');
-      return sources[0];
-    }
-
-    // 找出所有有效速度的最大值，用于线性映射
-    const validSpeeds = successfulResults
-      .map((result) => {
-        const speedStr = result.testResult.loadSpeed;
-        if (speedStr === '未知' || speedStr === '测量中...') return 0;
-
-        const match = speedStr.match(/^([\d.]+)\s*(KB\/s|MB\/s)$/);
-        if (!match) return 0;
-
-        const value = parseFloat(match[1]);
-        const unit = match[2];
-        return unit === 'MB/s' ? value * 1024 : value; // 统一转换为 KB/s
-      })
-      .filter((speed) => speed > 0);
-
-    const maxSpeed = validSpeeds.length > 0 ? Math.max(...validSpeeds) : 1024; // 默认1MB/s作为基准
-
-    // 找出所有有效延迟的最小值和最大值，用于线性映射
-    const validPings = successfulResults
-      .map((result) => result.testResult.pingTime)
-      .filter((ping) => ping > 0);
-
-    const minPing = validPings.length > 0 ? Math.min(...validPings) : 50;
-    const maxPing = validPings.length > 0 ? Math.max(...validPings) : 1000;
-
-    // 计算每个结果的评分
-    const resultsWithScore = successfulResults.map((result) => ({
-      ...result,
-      score: calculateSourceScore(
-        result.testResult,
-        maxSpeed,
-        minPing,
-        maxPing
-      ),
-    }));
-
-    // 按综合评分排序，选择最佳播放源
-    resultsWithScore.sort((a, b) => b.score - a.score);
-
-    console.log('播放源评分排序结果:');
-    resultsWithScore.forEach((result, index) => {
-      console.log(
-        `${index + 1}. ${
-          result.source.source_name
-        } - 评分: ${result.score.toFixed(2)} (${result.testResult.quality}, ${
-          result.testResult.loadSpeed
-        }, ${result.testResult.pingTime}ms)`
-      );
-    });
-
-    return resultsWithScore[0].source;
-  };
-
-  // 计算播放源综合评分
-  const calculateSourceScore = (
-    testResult: {
-      quality: string;
-      loadSpeed: string;
-      pingTime: number;
-    },
-    maxSpeed: number,
-    minPing: number,
-    maxPing: number
-  ): number => {
-    let score = 0;
-
-    // 分辨率评分 (40% 权重)
-    const qualityScore = (() => {
-      switch (testResult.quality) {
-        case '4K':
-          return 100;
-        case '2K':
-          return 85;
-        case '1080p':
-          return 75;
-        case '720p':
-          return 60;
-        case '480p':
-          return 40;
-        case 'SD':
-          return 20;
-        default:
-          return 0;
-      }
-    })();
-    score += qualityScore * 0.4;
-
-    // 下载速度评分 (40% 权重) - 基于最大速度线性映射
-    const speedScore = (() => {
-      const speedStr = testResult.loadSpeed;
-      if (speedStr === '未知' || speedStr === '测量中...') return 30;
-
-      // 解析速度值
-      const match = speedStr.match(/^([\d.]+)\s*(KB\/s|MB\/s)$/);
-      if (!match) return 30;
-
-      const value = parseFloat(match[1]);
-      const unit = match[2];
-      const speedKBps = unit === 'MB/s' ? value * 1024 : value;
-
-      // 基于最大速度线性映射，最高100分
-      const speedRatio = speedKBps / maxSpeed;
-      return Math.min(100, Math.max(0, speedRatio * 100));
-    })();
-    score += speedScore * 0.4;
-
-    // 网络延迟评分 (20% 权重) - 基于延迟范围线性映射
-    const pingScore = (() => {
-      const ping = testResult.pingTime;
-      if (ping <= 0) return 0; // 无效延迟给默认分
-
-      // 如果所有延迟都相同，给满分
-      if (maxPing === minPing) return 100;
-
-      // 线性映射：最低延迟=100分，最高延迟=0分
-      const pingRatio = (maxPing - ping) / (maxPing - minPing);
-      return Math.min(100, Math.max(0, pingRatio * 100));
-    })();
-    score += pingScore * 0.2;
-
-    return Math.round(score * 100) / 100; // 保留两位小数
-  };
-
+  // ---------------------- Utilities (restored) ----------------------
   // 更新视频地址
   const updateVideoUrl = (
     detailData: SearchResult | null,
@@ -393,38 +193,27 @@ function PlayPageClient() {
     const sources = Array.from(video.getElementsByTagName('source'));
     const existed = sources.some((s) => s.src === url);
     if (!existed) {
-      // 移除旧的 source，保持唯一
       sources.forEach((s) => s.remove());
       const sourceEl = document.createElement('source');
       sourceEl.src = url;
       video.appendChild(sourceEl);
     }
-
-    // 始终允许远程播放（AirPlay / Cast）
     video.disableRemotePlayback = false;
-    // 如果曾经有禁用属性，移除之
     if (video.hasAttribute('disableRemotePlayback')) {
       video.removeAttribute('disableRemotePlayback');
     }
   };
 
-  // 去广告相关函数
   function filterAdsFromM3U8(m3u8Content: string): string {
     if (!m3u8Content) return '';
-
-    // 按行分割M3U8内容
     const lines = m3u8Content.split('\n');
-    const filteredLines = [];
-
+    const filteredLines: string[] = [];
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-
-      // 只过滤#EXT-X-DISCONTINUITY标识
       if (!line.includes('#EXT-X-DISCONTINUITY')) {
         filteredLines.push(line);
       }
     }
-
     return filteredLines.join('\n');
   }
 
@@ -433,30 +222,61 @@ function PlayPageClient() {
       super(config);
       const load = this.load.bind(this);
       this.load = function (context: any, config: any, callbacks: any) {
-        // 拦截manifest和level请求
-        if (
-          (context as any).type === 'manifest' ||
-          (context as any).type === 'level'
-        ) {
+        if ((context as any).type === 'manifest' || (context as any).type === 'level') {
           const onSuccess = callbacks.onSuccess;
-          callbacks.onSuccess = function (
-            response: any,
-            stats: any,
-            context: any
-          ) {
-            // 如果是m3u8文件，处理内容以移除广告分段
+          callbacks.onSuccess = function (response: any, stats: any, ctx: any) {
             if (response.data && typeof response.data === 'string') {
-              // 过滤掉广告段 - 实现更精确的广告过滤逻辑
               response.data = filterAdsFromM3U8(response.data);
             }
-            return onSuccess(response, stats, context, null);
+            return onSuccess(response, stats, ctx, null);
           };
         }
-        // 执行原始load方法
         load(context, config, callbacks);
       };
     }
   }
+
+  // 简化的优选：保留原评分逻辑的壳，若失败则返回首个
+  const preferBestSource = async (sources: SearchResult[]): Promise<SearchResult> => {
+    if (!sources || sources.length === 0) {
+      throw new Error('no sources');
+    }
+    if (sources.length === 1) return sources[0];
+    try {
+      // 复用已有测速工具，若失败则回退
+      const batchSize = Math.ceil(sources.length / 2);
+      const results: Array<{ source: SearchResult; score: number } | null> = [];
+      for (let start = 0; start < sources.length; start += batchSize) {
+        const batch = sources.slice(start, start + batchSize);
+        const batchScores = await Promise.all(
+          batch.map(async (s) => {
+            try {
+              const episodeUrl = s.episodes?.[Math.min(1, (s.episodes?.length || 1) - 1)] || '';
+              const t = await getVideoResolutionFromM3u8(episodeUrl);
+              // 简单分：分辨率>速度>延迟
+              const qScore = ({ '4K': 100, '2K': 85, '1080p': 75, '720p': 60, '480p': 40, SD: 20 } as any)[t.quality] || 0;
+              const sp = t.loadSpeed;
+              const m = sp.match(/^([\d.]+)\s*(KB\/s|MB\/s)$/);
+              const spVal = m ? (m[2] === 'MB/s' ? parseFloat(m[1]) * 1024 : parseFloat(m[1])) : 0;
+              const speedScore = Math.min(100, (spVal / 1024) * 100);
+              const pingScore = t.pingTime > 0 ? Math.max(0, Math.min(100, (200 - t.pingTime) / 2)) : 50;
+              const score = qScore * 0.4 + speedScore * 0.4 + pingScore * 0.2;
+              return { source: s, score };
+            } catch {
+              return null;
+            }
+          })
+        );
+        results.push(...batchScores);
+      }
+      const valid = results.filter(Boolean) as Array<{ source: SearchResult; score: number }>;
+      if (valid.length === 0) return sources[0];
+      valid.sort((a, b) => b.score - a.score);
+      return valid[0].source;
+    } catch {
+      return sources[0];
+    }
+  };
 
   // 当集数索引变化时自动更新视频地址
   useEffect(() => {
@@ -504,7 +324,7 @@ function PlayPageClient() {
             .replace(/第[一二三四五六七八九十0-9]+部/gi, '')
             .replace(/Season\s*\d+/gi, '')
             .replace(/S\d+/gi, '')
-            .replace(/[·・.:：!！?？、，,。()（）《》<>“”"'’\s]/g, '')
+            .replace(/[·・.:：!！?？、，,。()（）《》<>"'"'\s]/g, '')
             .toLowerCase();
 
         const qNorm = normalize(videoTitleRef.current || query);
@@ -551,7 +371,7 @@ function PlayPageClient() {
           results = scored.filter((x) => x.score > 0).map((x) => x.r);
         }
 
-        // 仍为空则直接返回原始结果（兜底），避免前端报“未找到匹配结果”
+        // 仍为空则直接返回原始结果（兜底），避免前端报"未找到匹配结果"
         if (results.length === 0) {
           results = data.results as SearchResult[];
         }
@@ -1143,6 +963,7 @@ function PlayPageClient() {
         moreVideoAttr: {
           crossOrigin: 'anonymous',
         },
+        // 字幕加载暂时禁用以避免初始化失败，后续通过实例方法或更安全方式注入
         // HLS 支持配置
         customType: {
           m3u8: function (video: HTMLVideoElement, url: string) {
@@ -1340,6 +1161,8 @@ function PlayPageClient() {
       }
     };
   }, []);
+
+  // 无字幕资源需要清理
 
   if (loading) {
     return (

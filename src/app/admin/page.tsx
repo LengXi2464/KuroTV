@@ -30,6 +30,7 @@ import { AdminConfig, AdminConfigResult } from '@/lib/admin.types';
 import { getAuthInfoFromBrowserCookie } from '@/lib/auth';
 
 import PageLayout from '@/components/PageLayout';
+import Link from 'next/link';
 
 // 统一弹窗方法（必须在首次使用前定义）
 const showError = (message: string) =>
@@ -1326,6 +1327,8 @@ function AdminPageClient() {
           >
             <SiteConfigComponent config={config} />
           </CollapsibleTab>
+
+          
 
           <div className='space-y-4'>
             {/* 用户配置标签 */}
