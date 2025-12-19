@@ -58,7 +58,7 @@ export function formatFileSize(bytes: number, decimals = 2): string {
 export function truncateText(
   text: string,
   maxLength = 100,
-  ellipsis: string = '...'
+  ellipsis = '...'
 ): string {
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength - ellipsis.length) + ellipsis;
@@ -78,7 +78,7 @@ export function sleep(ms: number): Promise<void> {
  * @param length 长度
  * @returns 随机字符串
  */
-export function generateRandomString(length: number = 8): string {
+export function generateRandomString(length = 8): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let result = '';
   for (let i = 0; i < length; i++) {
