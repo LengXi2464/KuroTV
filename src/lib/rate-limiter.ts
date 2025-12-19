@@ -89,7 +89,7 @@ export class RateLimiter {
     const now = Date.now();
     const keysToDelete: string[] = [];
 
-    for (const [key, record] of this.records.entries()) {
+    for (const [key, record] of Array.from(this.records.entries())) {
       if (now > record.resetTime) {
         keysToDelete.push(key);
       }
