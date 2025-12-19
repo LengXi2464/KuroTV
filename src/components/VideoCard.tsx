@@ -8,9 +8,9 @@ import { useRouter } from 'next/navigation';
 import React, { useCallback, useMemo, useState } from 'react';
 
 import { deletePlayRecord } from '@/lib/db.client';
+import { getErrorMessage } from '@/lib/errors';
 import { SearchResult } from '@/lib/types';
 import { processImageUrl } from '@/lib/utils';
-import { getErrorMessage } from '@/lib/errors';
 import { useFavorite } from '@/hooks/useFavorite';
 import { useToast } from '@/components/common/Toast';
 
