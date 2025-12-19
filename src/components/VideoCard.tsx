@@ -129,7 +129,6 @@ export default function VideoCard({
           year: actualYear || '',
           cover: actualPoster,
           total_episodes: actualEpisodes ?? 1,
-          save_time: Date.now(),
         });
         
         showToast(
