@@ -10,6 +10,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { deletePlayRecord } from '@/lib/db.client';
 import { getErrorMessage } from '@/lib/errors';
 import { SearchResult } from '@/lib/types';
+import { processImageUrl } from '@/lib/utils';
 import { useFavorite } from '@/hooks/useFavorite';
 import { useToast } from '@/components/common/Toast';
 
@@ -245,38 +246,23 @@ export default function VideoCard({
     return configs[from];
   }, [from]);
 
-  const placeholderSrc = actualPoster || '/placeholder.svg';
-
   return (
     <div
-      className='
-        group
-        relative
-        overflow-hidden
-        rounded-xl
-        bg-white
-        shadow-sm
-        transition-all
-        duration-300
-        hover:shadow-xl
-        dark:bg-gray-800
-      '
-      style={{ cursor: from === 'douban' ? 'default' : 'pointer' }}
+      className='group relative w-full rounded-lg bg-transparent cursor-pointer transition-all duration-300 ease-in-out hover:scale-[1.05] hover:z-[500]'
       onClick={from !== 'douban' ? handleClick : undefined}
     >
-      {/* 图片容器 */}
-      <div className='relative aspect-[2/3] w-full overflow-hidden rounded-t-xl bg-gray-100 dark:bg-gray-700'>
+      {/* 海报容器 */}
+      <div className='relative aspect-[2/3] overflow-hidden rounded-lg'>
+        {/* 骨架屏 */}
+        {!isLoading && <div className='absolute inset-0 bg-gray-200 dark:bg-gray-700 animate-pulse' />}
+        {/* 图片 */}
         <Image
-          src={placeholderSrc}
+          src={processImageUrl(actualPoster)}
           alt={actualTitle}
           fill
-          sizes='(max-width: 768px) 50vw, 25vw'
-          className='object-cover transition-transform duration-500 group-hover:scale-105'
-          placeholder='empty'
-          onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-            const target = e.target as HTMLImageElement;
-            target.src = '/placeholder.svg';
-          }}
+          className='object-cover'
+          referrerPolicy='no-referrer'
+          onLoadingComplete={() => setIsLoading(true)}
         />
         {/* 悬浮操作按钮 - 仅非douban显示 */}
         {from !== 'douban' && (
