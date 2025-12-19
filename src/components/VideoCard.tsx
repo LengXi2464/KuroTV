@@ -280,6 +280,7 @@ export default function VideoCard({
           }}
           priority={false}
           loading='lazy'
+          unoptimized
         />
         {/* 悬浮操作按钮 - 仅非douban显示 */}
         {from !== 'douban' && (
