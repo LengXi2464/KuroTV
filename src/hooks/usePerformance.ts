@@ -61,7 +61,7 @@ export function useDebouncedCallback( // eslint-disable-next-line @typescript-es
  */
 export function useThrottle<T extends (...args: any[]) => any>(
   callback: T,
-  delay: number = 1000
+  delay = 1000
 ): (...args: Parameters<T>) => void {
   const lastRun = useRef(Date.now());
 

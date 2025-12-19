@@ -57,7 +57,7 @@ export function formatFileSize(bytes: number, decimals = 2): string {
  */
 export function truncateText(
   text: string,
-  maxLength: number = 100,
+  maxLength = 100,
   ellipsis: string = '...'
 ): string {
   if (text.length <= maxLength) return text;
