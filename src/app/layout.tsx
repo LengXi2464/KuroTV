@@ -9,6 +9,9 @@ import { getConfig } from '@/lib/config';
 import { SiteProvider } from '../components/SiteProvider';
 import { ThemeProvider } from '../components/ThemeProvider';
 import SkinApplier from '@/components/SkinApplier';
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
+import { ToastProvider } from '@/components/common/Toast';
+import { MusicPlayer } from '@/components/MusicPlayer';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -77,17 +80,21 @@ export default async function RootLayout({
       <body
         className={`${inter.className} min-h-screen bg-white text-gray-900 dark:bg-black dark:text-gray-200`}
       >
-        <ThemeProvider
-          attribute='class'
-          defaultTheme='system'
-          enableSystem
-          disableTransitionOnChange
-        >
-          <SiteProvider siteName={siteName} announcement={announcement}>
-            <SkinApplier />
-            {children}
-          </SiteProvider>
-        </ThemeProvider>
+        <ErrorBoundary>
+          <ToastProvider>
+            <ThemeProvider
+              attribute='class'
+              defaultTheme='system'
+              enableSystem
+            >
+              <SiteProvider siteName={siteName} announcement={announcement}>
+                <SkinApplier />
+                {children}
+                <MusicPlayer />
+              </SiteProvider>
+            </ThemeProvider>
+          </ToastProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );
