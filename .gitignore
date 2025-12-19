@@ -11,6 +11,7 @@
 # next.js
 /.next/
 /out/
+/.vercel/
 
 # production
 /build
@@ -25,9 +26,18 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# local env files
+# env
 .env
-.env*.local
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+
+# 排除原版备份目录
+/原版/
+原版/nv
 
 # vercel
 .vercel
