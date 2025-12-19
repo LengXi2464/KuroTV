@@ -272,15 +272,15 @@ export default function VideoCard({
           src={imgSrc}
           alt={actualTitle}
           fill
-          sizes='(max-width: 768px) 50vw, 25vw'
-          className='object-cover transition-transform duration-500 group-hover:scale-105'
-          placeholder='empty'
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            target.src = '/placeholder.svg';
+          sizes='(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw'
+          className='object-cover transition-all duration-300 group-hover:scale-105'
+          onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+            e.currentTarget.src = '/placeholder-image.svg';
+            e.currentTarget.onerror = null;
           }}
+          priority={false}
+          loading='lazy'
         />
-
         {/* 悬浮操作按钮 - 仅非douban显示 */}
         {from !== 'douban' && (
           <div className='absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-300 group-hover:bg-black/50 group-hover:opacity-100'>
@@ -375,7 +375,7 @@ export default function VideoCard({
           href={`https://movie.douban.com/subject/${actualDoubanId}/`}
           target='_blank'
           rel='noopener noreferrer'
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e: React.MouseEvent<HTMLAnchorElement>) => e.stopPropagation()}
           className='absolute right-2 top-2 rounded-full bg-green-600 px-3 py-1 text-xs font-medium text-white shadow-md transition-all hover:bg-green-700 hover:shadow-lg'
         >
           豆瓣详情
