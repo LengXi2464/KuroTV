@@ -121,7 +121,7 @@ export async function getPlaylistDetail(id: number): Promise<NetEasePlaylist | n
  */
 export async function searchSongs(
   keyword: string,
-  limit: number = 30
+  limit = 30
 ): Promise<NetEaseSong[]> {
   try {
     const response = await fetch(

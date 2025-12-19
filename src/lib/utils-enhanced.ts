@@ -38,14 +38,14 @@ export function formatTime(seconds: number): string {
  * @param bytes 字节数
  * @returns 格式化的大小字符串
  */
-export function formatFileSize(bytes: number): string {
+export function formatFileSize(bytes: number, decimals = 2): string {
   if (bytes === 0) return '0 Bytes';
 
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(decimals))} ${sizes[i]}`;
 }
 
 /**
@@ -57,7 +57,7 @@ export function formatFileSize(bytes: number): string {
  */
 export function truncateText(
   text: string,
-  maxLength: number,
+  maxLength: number = 100,
   ellipsis: string = '...'
 ): string {
   if (text.length <= maxLength) return text;
@@ -106,7 +106,7 @@ export function deepClone<T>(obj: T): T {
   if (obj instanceof Object) {
     const clonedObj = {} as T;
     for (const key in obj) {
-      if (obj.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
         clonedObj[key] = deepClone(obj[key]);
       }
     }

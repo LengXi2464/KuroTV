@@ -11,7 +11,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
  * @param delay 延迟时间（毫秒）
  * @returns 防抖后的值
  */
-export function useDebounce<T>(value: T, delay: number = 300): T {
+export function useDebounce<T>(value: T, delay = 300): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
 
   useEffect(() => {
@@ -33,14 +33,14 @@ export function useDebounce<T>(value: T, delay: number = 300): T {
  * @param delay 延迟时间（毫秒）
  * @returns 防抖后的回调函数
  */
-export function useDebouncedCallback<T extends (...args: any[]) => any>(
-  callback: T,
-  delay: number = 300
-): (...args: Parameters<T>) => void {
+export function useDebouncedCallback( // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  callback: (...args: any[]) => any,
+  delay = 300
+) {
   const timeoutRef = useRef<NodeJS.Timeout>();
 
   return useCallback(
-    (...args: Parameters<T>) => {
+    (...args: any[]) => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }

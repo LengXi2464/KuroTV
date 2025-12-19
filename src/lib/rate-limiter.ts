@@ -16,7 +16,7 @@ export class RateLimiter {
   private readonly maxRequests: number;
   private readonly windowMs: number;
 
-  constructor(maxRequests: number = 100, windowMs: number = 60000) {
+  constructor(maxRequests = 100, windowMs = 60000) {
     this.maxRequests = maxRequests;
     this.windowMs = windowMs;
 
@@ -30,7 +30,7 @@ export class RateLimiter {
    * @param endpoint 端点名称（可选，用于不同端点不同限制）
    * @returns 是否允许请求
    */
-  check(identifier: string, endpoint: string = 'default'): boolean {
+  check(identifier: string, endpoint = 'default'): boolean {
     const key = `${identifier}:${endpoint}`;
     const now = Date.now();
     const record = this.records.get(key);
@@ -58,7 +58,7 @@ export class RateLimiter {
    * @param endpoint 端点名称
    * @returns 剩余请求数
    */
-  getRemainingQuota(identifier: string, endpoint: string = 'default'): number {
+  getRemainingQuota(identifier: string, endpoint = 'default'): number {
     const key = `${identifier}:${endpoint}`;
     const now = Date.now();
     const record = this.records.get(key);
@@ -76,7 +76,7 @@ export class RateLimiter {
    * @param endpoint 端点名称
    * @returns 重置时间戳，如果不存在记录则返回 null
    */
-  getResetTime(identifier: string, endpoint: string = 'default'): number | null {
+  getResetTime(identifier: string, endpoint = 'default'): number | null {
     const key = `${identifier}:${endpoint}`;
     const record = this.records.get(key);
     return record?.resetTime || null;
@@ -103,7 +103,7 @@ export class RateLimiter {
    * @param identifier 标识符
    * @param endpoint 端点名称
    */
-  reset(identifier: string, endpoint: string = 'default'): void {
+  reset(identifier: string, endpoint = 'default'): void {
     const key = `${identifier}:${endpoint}`;
     this.records.delete(key);
   }
