@@ -5,18 +5,13 @@
 import { Heart, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 
-import {
-  deletePlayRecord,
-  generateStorageKey,
-} from '@/lib/db.client';
+import { deletePlayRecord } from '@/lib/db.client';
 import { SearchResult } from '@/lib/types';
-import { processImageUrl } from '@/lib/utils';
+import { getErrorMessage } from '@/lib/errors';
 import { useFavorite } from '@/hooks/useFavorite';
 import { useToast } from '@/components/common/Toast';
-import { getErrorMessage } from '@/lib/errors';
-import { ImagePlaceholder } from '@/components/ImagePlaceholder';
 
 interface VideoCardProps {
   id?: string;
