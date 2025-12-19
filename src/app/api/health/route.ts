@@ -5,7 +5,8 @@
 
 import { NextResponse } from 'next/server';
 
-export const runtime = 'nodejs';
+export const runtime = 'edge';
+
 
 interface HealthStatus {
   status: 'healthy' | 'unhealthy';
