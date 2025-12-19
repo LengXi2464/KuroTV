@@ -10,7 +10,6 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { deletePlayRecord } from '@/lib/db.client';
 import { getErrorMessage } from '@/lib/errors';
 import { SearchResult } from '@/lib/types';
-import { processImageUrl } from '@/lib/utils';
 import { useFavorite } from '@/hooks/useFavorite';
 import { useToast } from '@/components/common/Toast';
 
@@ -247,7 +246,6 @@ export default function VideoCard({
   }, [from]);
 
   const placeholderSrc = actualPoster || '/placeholder.svg';
-  const imgSrc = processImageUrl(placeholderSrc);
 
   return (
     <div
@@ -269,18 +267,16 @@ export default function VideoCard({
       {/* 图片容器 */}
       <div className='relative aspect-[2/3] w-full overflow-hidden rounded-t-xl bg-gray-100 dark:bg-gray-700'>
         <Image
-          src={imgSrc}
+          src={placeholderSrc}
           alt={actualTitle}
           fill
-          sizes='(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw'
-          className='object-cover transition-all duration-300 group-hover:scale-105'
+          sizes='(max-width: 768px) 50vw, 25vw'
+          className='object-cover transition-transform duration-500 group-hover:scale-105'
+          placeholder='empty'
           onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-            e.currentTarget.src = '/placeholder-image.svg';
-            e.currentTarget.onerror = null;
+            const target = e.target as HTMLImageElement;
+            target.src = '/placeholder.svg';
           }}
-          priority={false}
-          loading='lazy'
-          unoptimized
         />
         {/* 悬浮操作按钮 - 仅非douban显示 */}
         {from !== 'douban' && (
