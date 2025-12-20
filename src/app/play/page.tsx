@@ -253,14 +253,14 @@ function PlayPageClient() {
             try {
               const episodeUrl = s.episodes?.[Math.min(1, (s.episodes?.length || 1) - 1)] || '';
               const t = await getVideoResolutionFromM3u8(episodeUrl);
-              // 优先考虑分辨率（60%），其次速度（30%），最后延迟（10%）
+              // 简单分：分辨率>速度>延迟
               const qScore = ({ '4K': 100, '2K': 85, '1080p': 75, '720p': 60, '480p': 40, SD: 20 } as any)[t.quality] || 0;
               const sp = t.loadSpeed;
               const m = sp.match(/^([\d.]+)\s*(KB\/s|MB\/s)$/);
               const spVal = m ? (m[2] === 'MB/s' ? parseFloat(m[1]) * 1024 : parseFloat(m[1])) : 0;
               const speedScore = Math.min(100, (spVal / 1024) * 100);
               const pingScore = t.pingTime > 0 ? Math.max(0, Math.min(100, (200 - t.pingTime) / 2)) : 50;
-              const score = qScore * 0.6 + speedScore * 0.3 + pingScore * 0.1;
+              const score = qScore * 0.4 + speedScore * 0.4 + pingScore * 0.2;
               return { source: s, score };
             } catch {
               return null;
@@ -713,24 +713,6 @@ function PlayPageClient() {
         artPlayerRef.current.fullscreen = !artPlayerRef.current.fullscreen;
         e.preventDefault();
       }
-    }
-
-    // Escape 或 Backspace = 返回上一页
-    if (e.key === 'Escape' || e.key === 'Backspace') {
-      // 如果正在全屏，先退出全屏
-      if (artPlayerRef.current?.fullscreen) {
-        artPlayerRef.current.fullscreen = false;
-        e.preventDefault();
-        return;
-      }
-      
-      // 否则返回上一页
-      if (window.history.length > 1) {
-        router.back();
-      } else {
-        router.push('/');
-      }
-      e.preventDefault();
     }
   };
 

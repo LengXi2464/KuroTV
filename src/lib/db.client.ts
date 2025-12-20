@@ -15,8 +15,6 @@
  */
 
 import { getAuthInfoFromBrowserCookie } from './auth';
-import { CACHE_CONFIG, SEARCH_CONFIG, STORAGE_KEYS } from './constants';
-import {ApiError, logError, toAppError } from './errors';
 
 // ---- 类型 ----
 export interface PlayRecord {
@@ -56,6 +54,16 @@ interface UserCacheStore {
   searchHistory?: CacheData<string[]>;
 }
 
+// ---- 常量 ----
+const PLAY_RECORDS_KEY = 'kurotv_play_records';
+const FAVORITES_KEY = 'kurotv_favorites';
+const SEARCH_HISTORY_KEY = 'kurotv_search_history';
+
+// 缓存相关常量
+const CACHE_PREFIX = 'kurotv_cache_';
+const CACHE_VERSION = '1.0.0';
+const CACHE_EXPIRE_TIME = 60 * 60 * 1000; // 一小时缓存过期
+
 // ---- 环境变量 ----
 const STORAGE_TYPE = (() => {
   const raw =
@@ -70,6 +78,10 @@ const STORAGE_TYPE = (() => {
     'localstorage';
   return raw;
 })();
+
+// ---------------- 搜索历史相关常量 ----------------
+// 搜索历史最大保存条数
+const SEARCH_HISTORY_LIMIT = 20;
 
 // ---- 缓存管理器 ----
 class HybridCacheManager {
@@ -94,7 +106,7 @@ class HybridCacheManager {
    * 生成用户专属的缓存key
    */
   private getUserCacheKey(username: string): string {
-    return `${CACHE_CONFIG.PREFIX}${username}`;
+    return `${CACHE_PREFIX}${username}`;
   }
 
   /**
@@ -108,7 +120,7 @@ class HybridCacheManager {
       const cached = localStorage.getItem(cacheKey);
       return cached ? JSON.parse(cached) : {};
     } catch (error) {
-      logError(error, 'HybridCacheManager.getUserCache');
+      console.warn('获取用户缓存失败:', error);
       return {};
     }
   }
@@ -123,7 +135,7 @@ class HybridCacheManager {
       const cacheKey = this.getUserCacheKey(username);
       localStorage.setItem(cacheKey, JSON.stringify(cache));
     } catch (error) {
-      logError(error, 'HybridCacheManager.saveUserCache');
+      console.warn('保存用户缓存失败:', error);
     }
   }
 
@@ -133,8 +145,8 @@ class HybridCacheManager {
   private isCacheValid<T>(cache: CacheData<T>): boolean {
     const now = Date.now();
     return (
-      cache.version === CACHE_CONFIG.VERSION &&
-      now - cache.timestamp < CACHE_CONFIG.EXPIRE_TIME
+      cache.version === CACHE_VERSION &&
+      now - cache.timestamp < CACHE_EXPIRE_TIME
     );
   }
 
@@ -145,7 +157,7 @@ class HybridCacheManager {
     return {
       data,
       timestamp: Date.now(),
-      version: CACHE_CONFIG.VERSION,
+      version: CACHE_VERSION,
     };
   }
 
@@ -247,7 +259,7 @@ class HybridCacheManager {
       const cacheKey = this.getUserCacheKey(targetUsername);
       localStorage.removeItem(cacheKey);
     } catch (error) {
-      logError(error, 'HybridCacheManager.clearUserCache');
+      console.warn('清除用户缓存失败:', error);
     }
   }
 
@@ -262,7 +274,7 @@ class HybridCacheManager {
 
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key?.startsWith(CACHE_CONFIG.PREFIX)) {
+        if (key?.startsWith(CACHE_PREFIX)) {
           try {
             const cache = JSON.parse(localStorage.getItem(key) || '{}');
             // 检查是否有任何缓存数据过期
@@ -285,7 +297,7 @@ class HybridCacheManager {
 
       keysToRemove.forEach((key) => localStorage.removeItem(key));
     } catch (error) {
-      logError(error, 'HybridCacheManager.clearExpiredCaches');
+      console.warn('清除过期缓存失败:', error);
     }
   }
 }
@@ -302,7 +314,7 @@ async function handleDatabaseOperationFailure(
   dataType: 'playRecords' | 'favorites' | 'searchHistory',
   error: any
 ): Promise<void> {
-  logError(error, `handleDatabaseOperationFailure - ${dataType}`);
+  console.error(`数据库操作失败 (${dataType}):`, error);
 
   try {
     let freshData: any;
@@ -337,7 +349,7 @@ async function handleDatabaseOperationFailure(
       })
     );
   } catch (refreshErr) {
-    logError(refreshErr, `刷新${dataType}缓存失败`);
+    console.error(`刷新${dataType}缓存失败:`, refreshErr);
   }
 }
 
@@ -414,7 +426,7 @@ export async function getAllPlayRecords(): Promise<Record<string, PlayRecord>> {
 
   // localstorage 模式
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.PLAY_RECORDS);
+    const raw = localStorage.getItem(PLAY_RECORDS_KEY);
     if (!raw) return {};
     return JSON.parse(raw) as Record<string, PlayRecord>;
   } catch (err) {
@@ -477,7 +489,7 @@ export async function savePlayRecord(
   try {
     const allRecords = await getAllPlayRecords();
     allRecords[key] = record;
-    localStorage.setItem(STORAGE_KEYS.PLAY_RECORDS, JSON.stringify(allRecords));
+    localStorage.setItem(PLAY_RECORDS_KEY, JSON.stringify(allRecords));
     window.dispatchEvent(
       new CustomEvent('playRecordsUpdated', {
         detail: allRecords,
@@ -538,7 +550,7 @@ export async function deletePlayRecord(
   try {
     const allRecords = await getAllPlayRecords();
     delete allRecords[key];
-    localStorage.setItem(STORAGE_KEYS.PLAY_RECORDS, JSON.stringify(allRecords));
+    localStorage.setItem(PLAY_RECORDS_KEY, JSON.stringify(allRecords));
     window.dispatchEvent(
       new CustomEvent('playRecordsUpdated', {
         detail: allRecords,
@@ -602,7 +614,7 @@ export async function getSearchHistory(): Promise<string[]> {
 
   // localStorage 模式
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.SEARCH_HISTORY);
+    const raw = localStorage.getItem(SEARCH_HISTORY_KEY);
     if (!raw) return [];
     const arr = JSON.parse(raw) as string[];
     // 仅返回字符串数组
@@ -627,8 +639,8 @@ export async function addSearchHistory(keyword: string): Promise<void> {
     const cachedHistory = cacheManager.getCachedSearchHistory() || [];
     const newHistory = [trimmed, ...cachedHistory.filter((k) => k !== trimmed)];
     // 限制长度
-    if (newHistory.length > SEARCH_CONFIG.HISTORY_LIMIT) {
-      newHistory.length = SEARCH_CONFIG.HISTORY_LIMIT;
+    if (newHistory.length > SEARCH_HISTORY_LIMIT) {
+      newHistory.length = SEARCH_HISTORY_LIMIT;
     }
     cacheManager.cacheSearchHistory(newHistory);
 
@@ -662,10 +674,10 @@ export async function addSearchHistory(keyword: string): Promise<void> {
     const history = await getSearchHistory();
     const newHistory = [trimmed, ...history.filter((k) => k !== trimmed)];
     // 限制长度
-    if (newHistory.length > SEARCH_CONFIG.HISTORY_LIMIT) {
-      newHistory.length = SEARCH_CONFIG.HISTORY_LIMIT;
+    if (newHistory.length > SEARCH_HISTORY_LIMIT) {
+      newHistory.length = SEARCH_HISTORY_LIMIT;
     }
-    localStorage.setItem(STORAGE_KEYS.SEARCH_HISTORY, JSON.stringify(newHistory));
+    localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(newHistory));
     window.dispatchEvent(
       new CustomEvent('searchHistoryUpdated', {
         detail: newHistory,
@@ -707,7 +719,7 @@ export async function clearSearchHistory(): Promise<void> {
 
   // localStorage 模式
   if (typeof window === 'undefined') return;
-  localStorage.removeItem(STORAGE_KEYS.SEARCH_HISTORY);
+  localStorage.removeItem(SEARCH_HISTORY_KEY);
   window.dispatchEvent(
     new CustomEvent('searchHistoryUpdated', {
       detail: [],
@@ -758,7 +770,7 @@ export async function deleteSearchHistory(keyword: string): Promise<void> {
   try {
     const history = await getSearchHistory();
     const newHistory = history.filter((k) => k !== trimmed);
-    localStorage.setItem(STORAGE_KEYS.SEARCH_HISTORY, JSON.stringify(newHistory));
+    localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(newHistory));
     window.dispatchEvent(
       new CustomEvent('searchHistoryUpdated', {
         detail: newHistory,
@@ -823,7 +835,7 @@ export async function getAllFavorites(): Promise<Record<string, Favorite>> {
 
   // localStorage 模式
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.FAVORITES);
+    const raw = localStorage.getItem(FAVORITES_KEY);
     if (!raw) return {};
     return JSON.parse(raw) as Record<string, Favorite>;
   } catch (err) {
@@ -883,7 +895,7 @@ export async function saveFavorite(
   try {
     const allFavorites = await getAllFavorites();
     allFavorites[key] = favorite;
-    localStorage.setItem(STORAGE_KEYS.FAVORITES, JSON.stringify(allFavorites));
+    localStorage.setItem(FAVORITES_KEY, JSON.stringify(allFavorites));
     window.dispatchEvent(
       new CustomEvent('favoritesUpdated', {
         detail: allFavorites,
@@ -941,7 +953,7 @@ export async function deleteFavorite(
   try {
     const allFavorites = await getAllFavorites();
     delete allFavorites[key];
-    localStorage.setItem(STORAGE_KEYS.FAVORITES, JSON.stringify(allFavorites));
+    localStorage.setItem(FAVORITES_KEY, JSON.stringify(allFavorites));
     window.dispatchEvent(
       new CustomEvent('favoritesUpdated', {
         detail: allFavorites,
@@ -1040,7 +1052,7 @@ export async function clearAllPlayRecords(): Promise<void> {
 
   // localStorage 模式
   if (typeof window === 'undefined') return;
-  localStorage.removeItem(STORAGE_KEYS.PLAY_RECORDS);
+  localStorage.removeItem(PLAY_RECORDS_KEY);
   window.dispatchEvent(
     new CustomEvent('playRecordsUpdated', {
       detail: {},
@@ -1081,7 +1093,7 @@ export async function clearAllFavorites(): Promise<void> {
 
   // localStorage 模式
   if (typeof window === 'undefined') return;
-  localStorage.removeItem(STORAGE_KEYS.FAVORITES);
+  localStorage.removeItem(FAVORITES_KEY);
   window.dispatchEvent(
     new CustomEvent('favoritesUpdated', {
       detail: {},
